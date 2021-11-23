@@ -39,8 +39,8 @@ const main = async () => {
 
         const sanitizedProgram =
             JSON.stringify(program)
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
 
         const templateBuf = await fs.readFile(path.join(clientDir, "calculator.hbs"));
         const template = templateBuf.toString("utf-8");
