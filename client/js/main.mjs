@@ -82,7 +82,7 @@ const staticAst = `{
     ]
 }`;
 
-const staticCode = `(-b + sqrt(b^2 - 4*a*c)) / (2*a)`;
+const staticCode = `(-b + sqrt(b^2 - 4a*c)) / 2a`;
 
 const resetTextArea = () => {
     const contentType = contentTypeEl.value;

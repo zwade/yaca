@@ -1,3 +1,13 @@
+/*
+Operation precedences:
+   0: exponentiation
+   1: implicit multiplication
+   2: multiplication/division
+   3: unary operators
+   4: addition/subtraction
+*/
+
+
 // We could probably have lexed directly into the parse token, but
 // this way we keep a bit more separation of church & state
 const lexTokenToParseToken = (token) => {
@@ -8,12 +18,12 @@ const lexTokenToParseToken = (token) => {
     switch (token.kind) {
         case "operator": {
             switch (token.value) {
-                case "invert":   return { kind: "UNOP", value: token.value, precedence: 2 };
-                case "subtract": return { kind: "MAYBE_UNOP", value: token.value, unopValue: "negate", precedence: 2 };
-                case "exponent": return { kind: "BINOP", value: token.value, precedence: 0 };
-                case "multiply": return { kind: "BINOP", value: token.value, precedence: 1 };
-                case "divide":   return { kind: "BINOP", value: token.value, precedence: 1 };
-                case "add":      return { kind: "BINOP", value: token.value, precedence: 2 };
+                case "invert":   return { kind: "UNOP", value: token.value, precedence: 3, isOp: true };
+                case "subtract": return { kind: "MAYBE_UNOP", value: token.value, unopValue: "negate", precedence: 4, isOp: true };
+                case "exponent": return { kind: "BINOP", value: token.value, precedence: 0, isOp: true, };
+                case "multiply": return { kind: "BINOP", value: token.value, precedence: 2, isOp: true, };
+                case "divide":   return { kind: "BINOP", value: token.value, precedence: 2, isOp: true, };
+                case "add":      return { kind: "BINOP", value: token.value, precedence: 4, isOp: true, };
                 default: throw new Error(`Unknown operator ${token.value}`);
             }
         }
@@ -23,6 +33,22 @@ const lexTokenToParseToken = (token) => {
         case "variable": return { kind: "VALUE", ast: { kind: "variable", variable: token.value } };
         default: throw new Error(`Unknown token kind ${token.kind}`);
     }
+}
+
+const mightBeUnop = (token) => {
+    return (
+        token.kind === "UNOP"
+        || token.kind === "MAYBE_UNOP"
+        || token.kind === "FUNCTION"
+        || token.kind === "IMPLICIT_MULTIPLICATION"
+    );
+}
+
+const mightBeBinop = (token) => {
+    return (
+        token.kind === "BINOP"
+        || token.kind === "MAYBE_UNOP"
+    );
 }
 
 const parseOne = (stack, lookahead) => {
@@ -39,83 +65,119 @@ const parseOne = (stack, lookahead) => {
 
     // Otherwise, all of our reductions occur on values
     if (stack[0]?.kind === "VALUE") {
-        // If this value is a function call, we don't want to overeagerly reduce
+        // We have some special cases for two adjacent values, when the first one is
+        // a pure variable (function call) or number (term multiplication)
         if (lookahead.kind === "VALUE" || lookahead.kind === "EXPR_START") {
-            return ["shift"];
-        }
-
-        // Pure unops can be safely reduced now, but we have to do an additional check
-        // for "maybe unops" such as "-" because it can either mean "negate" or "subtract"
-        if (stack[1]?.kind === "UNOP"
-            || (stack[1]?.kind === "MAYBE_UNOP" && stack[2]?.kind !== "VALUE")
-        ) {
-            const [value, unop, ...rest] = stack;
-            const op = unop.kind === "MAYBE_UNOP" ? unop.unopValue : unop.value;
-            const newValue = {
-                ...value,
-                ast: {
-                    kind: "unop",
-                    op,
-                    value: value.ast
+            if (stack[0].ast.kind === "variable") {
+                const [token, ...rest] = stack;
+                const newToken = {
+                    kind: "FUNCTION",
+                    isOp: true,
+                    precedence: 3,
+                    name: token.ast.variable
                 }
+
+                const newStack = [newToken, ...rest];
+                return ["reduce", newStack];
             }
-            return ["reduce", [newValue, ...rest]];
+
+            if (stack[0].ast.kind === "number") {
+                const [token, ...rest] = stack;
+                const newToken = {
+                    kind: "IMPLICIT_MULTIPLICATION",
+                    isOp: true,
+                    precedence: 1,
+                    value: token.ast.value
+                }
+
+                const newStack = [newToken, ...rest];
+                return ["reduce", newStack];
+            }
         }
 
-        // We can now reduce binops, or "maybe unops", the latter of which must be binops at this point
-        if (stack[1]?.kind === "BINOP" || stack[1]?.kind === "MAYBE_UNOP") {
-            // We handle precedence checking when a value is surrounded by two binops
-            // If the one to the right has a lower precedence (meaning it comes first), then we shift it in
-            // instead of reducing the binop
-            const shouldShift = lookahead.kind === "BINOP" && lookahead.precedence < stack[1].precedence;
+        // If we have an operator on our stack, we want to reduce it unless the upcoming
+        // operator has a stronger precedence
+        if (stack[1]?.isOp) {
+            const shouldShift = mightBeBinop(lookahead) && lookahead.precedence < stack[1].precedence;
             if (shouldShift) {
                 return ["shift"];
             }
 
-            if (stack[2]?.kind !== "VALUE") {
-                throw new Error("Attempted to apply binary operation to non-value");
+            const isBinop = mightBeBinop(stack[1]) && stack[2]?.kind === "VALUE";
+
+            if (isBinop) {
+                const [right, binop, left, ...rest] = stack;
+
+                // Binops are easy
+                const newValue = {
+                    kind: "VALUE",
+                    ast: {
+                        kind: "binop",
+                        op: binop.value,
+                        values: [
+                            left.ast,
+                            right.ast,
+                        ]
+                    }
+                };
+
+                return ["reduce", [newValue, ...rest]]
             }
 
-            const [right, binop, left, ...rest] = stack;
-
-            const newValue = {
-                kind: "VALUE",
-                ast: {
-                    kind: "binop",
-                    op: binop.value,
-                    values: [
-                        left.ast,
-                        right.ast,
-                    ]
-                }
-            };
-
-            return ["reduce", [newValue, ...rest]];
-        }
-
-        // Our final reduction case is when you have two values one after another.
-        // This can only occur during a function call, but since function binds right-to-left
-        // we only want to start reducing once we hit the end of a parenthetical or the program
-        if (stack[1]?.kind === "VALUE"
-            && (lookahead.kind === "EXPR_END" || lookahead.kind === "EOF")
-        ) {
-            if (stack[1].ast.kind !== "variable") {
-                throw new Error("Attempting to call non-function");
+            const isUnop = mightBeUnop(stack[1]);
+            if (!isUnop) {
+                throw new Error("Unexpected operator");
             }
 
-            const [value, variable, ...rest] = stack;
-            const name = variable.ast.variable;
+            const [value, unop, ...rest] = stack;
+            let newToken;
 
-            const newValue = {
-                kind: "VALUE",
-                ast: {
-                    kind: "function",
-                    name,
-                    argument: value.ast
+            // Handle each of the different types of unary operators
+            switch (unop.kind) {
+                case "UNOP":
+                case "MAYBE_UNOP": {
+                    const op = unop.kind === "MAYBE_UNOP" ? unop.unopValue : unop.value;
+                    newToken = {
+                        kind: "VALUE",
+                        ast: {
+                            kind: "unop",
+                            op,
+                            value: value.ast
+                        }
+                    };
+                    break;
                 }
-            };
+                case "FUNCTION": {
+                    newToken = {
+                        kind: "VALUE",
+                        ast: {
+                            kind: "function",
+                            name: unop.name,
+                            argument: value.ast,
+                        }
+                    };
+                    break;
+                }
+                case "IMPLICIT_MULTIPLICATION": {
+                    newToken = {
+                        kind: "VALUE",
+                        ast: {
+                            kind: "binop",
+                            op: "multiply",
+                            values: [
+                                { kind: "number", value: unop.value },
+                                value.ast,
+                            ]
+                        }
+                    };
+                    break
+                }
+                default: {
+                    throw new Error(`Unknown unary operator: ${unop.kind}`);
+                }
+            }
 
-            return ["reduce", [newValue, ...rest]];
+            return ["reduce", [newToken, ...rest]];
         }
     }
 
@@ -142,15 +204,21 @@ export default (tokens) => {
         const lookahead = lexTokenToParseToken(queue[0]);
         const action = parseOne(stack, lookahead);
 
-        if (action[0] === "shift") {
-            if (lookahead.kind === "EOF") {
-                throw new Error("Attempting to shift EOF, which indicates a malformed program");
-            }
+        // console.log([...stack], lookahead, action);
 
-            queue.shift();
-            stack.unshift(lookahead);
-        } else if (action[0] === "reduce") {
-            stack = action[1];
+        switch (action[0]) {
+            case "shift": {
+                if (lookahead.kind === "EOF") {
+                    throw new Error("Attempting to shift EOF, which indicates a malformed program");
+                }
+
+                queue.shift();
+                stack = [lookahead, ...stack]
+                break;
+            }
+            case "reduce": {
+                stack = action[1];
+            }
         }
     }
 
