@@ -32,6 +32,7 @@ const main = async () => {
             || type.match(/^[a-zA-Z\-/]{3,}$/) === null
             || typeof program.name !== "string"
             || typeof program.code !== "string"
+            || program.code.length > 10000
         ) {
             return res.status(500).send("Invalid program");
         }
