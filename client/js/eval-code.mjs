@@ -13,9 +13,9 @@ const prepareInputs = (variables, onChange) => {
         input.setAttribute("placeholder", `${variable.slice(4)}`);
         input.setAttribute("value", "");
         input.addEventListener("keyup", () => {
-            const value = parseInt(input.value);
+            let value = parseInt(input.value);
             if (isNaN(value)) {
-                return;
+                value = 0;
             }
 
             onChange(variable, value);

@@ -65,7 +65,7 @@ export default (source) => {
                 if (token.match(/^[a-z]$/)) {
                     let currentToken = token;
 
-                    while (index < source.length && source[index].match(/^[a-z]$/)) {
+                    while (index < source.length && source[index].match(/^[a-z0-9_]$/)) {
                         currentToken += source[index];
                         index += 1;
                     }

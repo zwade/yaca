@@ -15,7 +15,7 @@ const main = async () => {
     app.use((req, res, next) => {
         res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-eval' 'unsafe-inline'");
         next();
-    })
+    });
 
     app.get("/", (req, res) => {
         res.sendFile(path.join(clientDir, "index.html"));
@@ -33,7 +33,7 @@ const main = async () => {
             || typeof program.name !== "string"
             || typeof program.code !== "string"
         ) {
-            return res.status(500).send("Bad payload");
+            return res.status(500).send("Invalid program");
         }
 
         const sanitizedProgram =

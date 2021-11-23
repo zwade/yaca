@@ -16,6 +16,10 @@ const allowedMathFunctions = new Set([
 ]);
 
 export default function astToJs(ast) {
+    if (typeof ast !== "object" || ast === null) {
+        throw new Error("Ast node must be an object");
+    }
+
     switch (ast.kind) {
         case "number": {
             if (typeof ast.value !== "number") {
@@ -28,8 +32,12 @@ export default function astToJs(ast) {
             };
         }
         case "variable": {
-            if (!ast.variable.match(/^[a-z]+$/)) {
-                throw new Error("Invalid variable name");
+            if (typeof ast.variable !== "string") {
+                throw new Error("Variable name not specified");
+            }
+
+            if (!ast.variable.match(/^[a-z][a-z0-9_]*$/)) {
+                throw new Error(`Invalid variable name: ${ast.variable}`);
             }
 
             const name = `var_${ast.variable}`;
@@ -43,8 +51,12 @@ export default function astToJs(ast) {
             const { name, argument } = ast;
             const { code: argumentCode, variables } = astToJs(argument);
 
+            if (typeof name !== "string") {
+                throw new Error("Function name must be a string");
+            }
+
             if (!allowedMathFunctions.has(name)) {
-                throw new Error("Invalid function name");
+                throw new Error(`Invalid function: ${name}`);
             }
 
             const code = `Math.${name}(${argumentCode})`;
