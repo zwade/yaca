@@ -204,7 +204,9 @@ export default (tokens) => {
         const lookahead = lexTokenToParseToken(queue[0]);
         const action = parseOne(stack, lookahead);
 
-        // console.log([...stack], lookahead, action);
+        if (window.DEBUG) {
+            console.log([...stack], lookahead, action);
+        }
 
         switch (action[0]) {
             case "shift": {
