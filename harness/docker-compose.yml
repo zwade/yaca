@@ -19,7 +19,7 @@ services:
     depends_on:
       - postgres
     ports:
-      - 1064:1064
+      - 80:1064
   postgres:
     image: postgres
     restart: always
