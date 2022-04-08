@@ -76,6 +76,11 @@ const main = async () => {
 
     app.get("/program/:file", async (req, res) => {
         const fileName = req.params.file;
+
+        if (fileName.includes("..")) {
+            return res.status(500).send("Bad file name");
+        }
+
         const filePath = path.join(cacheDir, fileName);
 
         res.type("html");
