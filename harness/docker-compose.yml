@@ -1,0 +1,29 @@
+version: "3.7"
+services:
+  server:
+    build: ./server
+    image: frontend:latest
+    restart: always
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: 279aec2b98dc42b325ab3bf70fad7df44f291716
+      MAX_WORKERS: 1
+      TARGET_HOST: ${TARGET_HOST:-http://127.0.0.1} # this must be the public ip of the problem machine
+      ACCESS_PASSWORD:
+      FLAG: ${FLAG:-pctf{wow_someone_screwed_up_where_is_the_flag}}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../problem/docker-compose.yml:/problem/docker-compose.yml:ro # instance containers must be prebuilt
+    depends_on:
+      - postgres
+    ports:
+      - 1064:1064
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_PASSWORD: 279aec2b98dc42b325ab3bf70fad7df44f291716
