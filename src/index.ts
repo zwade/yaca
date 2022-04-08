@@ -42,8 +42,7 @@ const main = async () => {
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;");
 
-        const templateBuf = await fs.readFile(path.join(clientDir, "calculator.hbs"));
-        const template = templateBuf.toString("utf-8");
+        const template = await fs.readFile(path.join(clientDir, "calculator.hbs"), "utf-8");
         const formattedFile =
             template
                 .replace("{{ content-type }}", type)

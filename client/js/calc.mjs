@@ -7,7 +7,7 @@ const $ = document.querySelector.bind(document);
 const nameEl = $("#name");
 const errorEl = $("#error");
 
-const astProgram = document.querySelector("script#program");
+const astProgram = $("#program");
 const program = JSON.parse(astProgram.textContent);
 
 nameEl.innerText = `Running: ${program.name}`;
