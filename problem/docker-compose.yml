@@ -8,3 +8,5 @@ services:
       FLAG: ${FLAG:-ctf{missing}}
     ports:
       - "${PORT:-3838}:3838"
+    environment:
+      - FLAG=$FLAG

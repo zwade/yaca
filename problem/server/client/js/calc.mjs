@@ -6,11 +6,25 @@ import parse from "/js/parse.mjs";
 const $ = document.querySelector.bind(document);
 const nameEl = $("#name");
 const errorEl = $("#error");
+const reportEl = $("#report");
 
 const astProgram = $("#program");
 const program = JSON.parse(astProgram.textContent);
 
 nameEl.innerText = `Running: ${program.name}`;
+
+reportEl.addEventListener("click", () => {
+    const file = location.pathname.split("/").slice(-1)[0];
+    reportEl.disabled = true;
+    reportEl.innerText = "Reported!";
+    fetch(`/report`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ file })
+    });
+})
 
 try {
     let ast;

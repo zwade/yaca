@@ -114,10 +114,6 @@ code {
 					<div>URL: <a target="_blank" id="url"></a></div>
 					<br />
 					<div>Your instance will <span id="processing-verb">shut down</span> <span id="time-remaining">in 15 minutes</span>.</div>
-					<div id="send-url">
-						<input id="target-url" placeholder="URL for the bot to visit">
-						<button onClick="sendURL()">Send URL</button>
-					</div>
 				</div>
 			</div>
 		</main>
@@ -138,7 +134,6 @@ const urlElt = document.querySelector("#url");
 const sensorToken = document.querySelector("#sensor-token");
 const processingVerb = document.querySelector("#processing-verb");
 const timeRemaining = document.querySelector("#time-remaining");
-const sendURLElt = document.querySelector("#send-url");
 
 let instanceStateChangeTime = 0;
 
@@ -188,8 +183,6 @@ socket.on("processing", ({ response, until }) => {
 	urlElt.href = response.url;
 	processingVerb.innerText = "shut down";
 	instanceStateChangeTime = until;
-
-	sendURLElt.style.display = "block";
 });
 
 socket.on("done", () => {

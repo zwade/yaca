@@ -10,6 +10,7 @@
 #/.pnp.*
 
 cache
+*.sqlite
 .vscode
 dist
 node_modules

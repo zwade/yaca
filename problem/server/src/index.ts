@@ -4,6 +4,9 @@ import * as path from "path";
 import * as bodyParser from "body-parser";
 import { v4 as uuid } from "uuid";
 
+import { startVisiting } from "./page-worker";
+import { enqueue } from "./database";
+
 const cacheDir = path.join(__dirname, "../cache");
 const clientDir = path.join(__dirname, "../client");
 
@@ -54,6 +57,23 @@ const main = async () => {
         res.send(`/program/${fileName}`);
     });
 
+    app.post("/report", async (req, res) => {
+        if (
+            typeof req.body !== "object"
+            || typeof req.body.file !== "string"
+            || !req.body.file.match(/^program-[a-f0-9-]+$/)
+        ) {
+            return res.status(500).send("Bad payload");
+        }
+
+        const ip = req.ip;
+        const { file } = req.body;
+        const url = `http://localhost:3838/program/${file}`;
+
+        await enqueue(url, ip)
+        res.send("Ok");
+    })
+
     app.get("/program/:file", async (req, res) => {
         const fileName = req.params.file;
         const filePath = path.join(cacheDir, fileName);
@@ -70,6 +90,7 @@ const main = async () => {
     });
 }
 
+startVisiting();
 main();
 
 
