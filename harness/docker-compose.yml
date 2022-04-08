@@ -12,7 +12,7 @@ services:
       MAX_WORKERS: 1
       TARGET_HOST: ${TARGET_HOST:-http://127.0.0.1} # this must be the public ip of the problem machine
       ACCESS_PASSWORD:
-      FLAG: ${FLAG:-pctf{wow_someone_screwed_up_where_is_the_flag}}
+      FLAG: ${FLAG:-wow_someone_screwed_up_where_is_the_flag}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../problem:/problem:ro # instance containers must be prebuilt

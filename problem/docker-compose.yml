@@ -5,7 +5,7 @@ services:
     image: "yaca-server:latest"
     restart: always
     environment:
-      FLAG: ${FLAG:-ctf{missing}}
+      FLAG: ${FLAG:-missing}
     ports:
       - "${PORT:-3838}:3838"
     environment:
