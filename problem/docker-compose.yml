@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  server:
+    build: "./server"
+    image: "yaca-server:latest"
+    restart: always
+    environment:
+      FLAG: ${FLAG:-ctf{missing}}
+    ports:
+      - "${PORT:-3838}:3838"

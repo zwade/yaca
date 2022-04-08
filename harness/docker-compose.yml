@@ -15,7 +15,7 @@ services:
       FLAG: ${FLAG:-pctf{wow_someone_screwed_up_where_is_the_flag}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ../problem/docker-compose.yml:/problem/docker-compose.yml:ro # instance containers must be prebuilt
+      - ../problem:/problem:ro # instance containers must be prebuilt
     depends_on:
       - postgres
     ports:
